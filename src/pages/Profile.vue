@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch, watchEffect } from 'vue';
+import { computed, onMounted, reactive, ref, watch, watchEffect } from 'vue';
 
 import AvatarUploader from '@/components/common/AvatarUploader.vue';
 import EmptyState from '@/components/common/EmptyState.vue';
@@ -67,11 +67,18 @@ import ItemCard from '@/components/common/ItemCard.vue';
 import UserBrief from '@/components/common/UserBrief.vue';
 import { ItemStatus } from '@/constants/item';
 import { useAuth } from '@/hooks/useAuth';
+import { useExchangeStore } from '@/stores/exchangeStore';
 import { useItemStore } from '@/stores/itemStore';
 
 const { currentUser, users, login, updateProfile } = useAuth();
 const itemStore = useItemStore();
+const exchangeStore = useExchangeStore();
 const selectedUserId = ref('');
+
+// 进入个人页时清扫到期的交换请求，被释放的物品会重新显示为可交换
+onMounted(() => {
+  void exchangeStore.sweepExpired();
+});
 
 const form = reactive({
   nickname: '',

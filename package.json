@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 18415",
     "build": "vue-tsc --noEmit && vite build",
-    "preview": "vite preview --host 0.0.0.0 --port 18415"
+    "preview": "vite preview --host 0.0.0.0 --port 18415",
+    "test:expiry": "esbuild test/expiry.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/expiry.test.mjs --alias:@=./src --alias:idb-keyval=./test/mock-idb.ts && node node_modules/.cache/expiry.test.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-vue": "^5.2.4",

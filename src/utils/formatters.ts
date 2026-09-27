@@ -9,6 +9,7 @@ export const formatDate = (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm
 export const formatItemStatus = (status: ItemStatus) => {
   const map: Record<ItemStatus, string> = {
     [ItemStatus.AVAILABLE]: '可交换',
+    [ItemStatus.BOOKED]: '占用中',
     [ItemStatus.EXCHANGED]: '已交换',
     [ItemStatus.OFFLINE]: '已下架',
   };
@@ -21,6 +22,7 @@ export const formatExchangeStatus = (status: ExchangeStatus) => {
     [ExchangeStatus.ACCEPTED]: '已同意',
     [ExchangeStatus.REJECTED]: '已拒绝',
     [ExchangeStatus.COMPLETED]: '已完成',
+    [ExchangeStatus.EXPIRED]: '已关闭',
   };
   return map[status];
 };
@@ -44,9 +46,28 @@ export const formatCreditLevel = (score: number) => {
 
 export const statusToneClass = (status: ItemStatus | ExchangeStatus) => {
   if (status === ItemStatus.AVAILABLE || status === ExchangeStatus.ACCEPTED) return 'status-good';
-  if (status === ItemStatus.OFFLINE || status === ExchangeStatus.REJECTED) return 'status-muted';
+  if (
+    status === ItemStatus.OFFLINE ||
+    status === ExchangeStatus.REJECTED ||
+    status === ExchangeStatus.EXPIRED
+  ) {
+    return 'status-muted';
+  }
   if (status === ItemStatus.EXCHANGED || status === ExchangeStatus.COMPLETED) return 'status-done';
   return 'status-wait';
+};
+
+/** 待确认请求的剩余有效期展示，到期返回「已到期」等待系统清扫关闭 */
+export const formatRemainingTime = (expiresAt: string, now: number = Date.now()) => {
+  const diff = dayjs(expiresAt).valueOf() - now;
+  if (Number.isNaN(diff) || diff <= 0) return '已到期';
+  const totalMinutes = Math.floor(diff / 60000);
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+  if (days > 0) return `剩余 ${days} 天 ${hours} 小时`;
+  if (hours > 0) return `剩余 ${hours} 小时 ${minutes} 分`;
+  return `剩余 ${Math.max(minutes, 1)} 分钟`;
 };
 
 export const formatStatusMessage = (status: ItemStatus | ExchangeStatus) => STATUS_MESSAGE_MAP[status];

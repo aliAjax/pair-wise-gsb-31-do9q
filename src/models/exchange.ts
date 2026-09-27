@@ -8,10 +8,14 @@ export interface Exchange {
   to_item_id: string;
   status: ExchangeStatus;
   message: string;
+  /** 待确认请求的截止时间（created_at + 72h），超时自动关闭 */
+  expires_at: string;
+  /** 到期自动关闭时写入的关闭原因，保留原记录供列表展示 */
+  closed_reason?: string;
   created_at: string;
   updated_at: string;
 }
 
-export type ExchangeDraft = Omit<Exchange, 'id' | 'status' | 'created_at' | 'updated_at'> & {
+export type ExchangeDraft = Omit<Exchange, 'id' | 'status' | 'expires_at' | 'closed_reason' | 'created_at' | 'updated_at'> & {
   status?: ExchangeStatus;
 };

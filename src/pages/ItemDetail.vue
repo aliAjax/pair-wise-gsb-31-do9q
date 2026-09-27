@@ -29,6 +29,9 @@
         <UserBrief v-if="owner" :user="owner" />
 
         <div v-if="!isMine" class="exchange-box">
+          <p v-if="item.status === ItemStatus.BOOKED" class="form-note">
+            {{ formatStatusMessage(ItemStatus.BOOKED) }}，等当前请求关闭后再来发起交换
+          </p>
           <label>
             我的交换物
             <select v-model="selectedItemId">
@@ -67,7 +70,7 @@ import { ItemStatus } from '@/constants/item';
 import { useAuthStore } from '@/stores/authStore';
 import { useExchangeStore } from '@/stores/exchangeStore';
 import { useItemStore } from '@/stores/itemStore';
-import { formatCondition, formatDate, formatItemStatus, statusToneClass } from '@/utils/formatters';
+import { formatCondition, formatDate, formatItemStatus, formatStatusMessage, statusToneClass } from '@/utils/formatters';
 import { message } from '@/utils/message';
 
 const route = useRoute();

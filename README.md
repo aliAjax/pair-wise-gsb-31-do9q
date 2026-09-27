@@ -17,8 +17,19 @@ ReSwap 是一个纯前端以物换物 Web 应用。用户可以本地模拟登�
 - 物品详情、物主资料、选择自己的物品发起交换。
 - 发布物品，支持本地 base64 图片上传、分类和成色选择。
 - 交换管理，区分我发起的和我收到的请求，支持同意、拒绝、完成。
+- 待确认请求 72 小时有效期：超时自动关闭并保留原记录，双方物品恢复可交换。
 - 个人中心，编辑资料、上传头像、查看我发布的物品。
 - 主题切换、全局错误处理和 Vant 提示。
+
+## 交换请求 72 小时有效期
+
+- 发起交换后请求进入「待确认」，同时双方物品变为「占用中」（`ItemStatus.BOOKED`），不能再被其他请求占用，首页默认只展示「可交换」物品。
+- 待确认请求携带 `expires_at`（创建时间 + 72 小时）。`exchangeApi.list()` 每次读取时自动清扫：超时请求变为「已关闭」（`ExchangeStatus.EXPIRED`），原记录（留言、时间、双方物品）全部保留，并写入 `closed_reason` 关闭原因。
+- 请求关闭或被拒绝后，双方物品恢复「可交换」；个人中心会重新显示物品可交换。
+- 到期后物主无法再确认：操作接口会拒绝并提示「该交换请求已超时关闭，无法确认」。
+- 已完成、已拒绝的历史记录不受清扫影响；同一物品再次发起交换时一律新建请求，过期旧单不会被复活。
+- 交换列表的卡片展示剩余有效期（每 30 秒刷新）和关闭原因；交换管理页和个人中心会定时/进入时触发清扫。
+- 有效期规则可用 `npm run test:expiry` 验证（node 运行 `test/expiry.test.ts`，覆盖到期关闭、物品释放、无法确认、重发新单等场景）。
 
 ## 启动与构建
 
@@ -124,7 +135,7 @@ src/
 - `ItemStatus` 与 `ExchangeStatus` 被模型、API、store、组件、页面、router guards、formatters 多处引用。
 - `utils/storage.ts` 是存储入口，但全应用 API 和 store 都依赖它的 key 与数据结构。
 
-例如新增 `ItemStatus.BOOKED` 时，应至少修改：`src/constants/item.ts`、`src/models/item.ts`、`src/api/itemApi.ts`、`src/api/exchangeApi.ts`、`src/stores/itemStore.ts`、`src/router/guards.ts`、`src/utils/formatters.ts`、`src/constants/messages.ts`、`src/components/common/ItemCard.vue`、`src/pages/ItemDetail.vue`、`src/pages/Publish.vue` 等文件。
+例如本次新增 `ItemStatus.BOOKED`（占用中）与 `ExchangeStatus.EXPIRED`（已关闭）时，实际触达了：`src/constants/item.ts`、`src/constants/exchange.ts`、`src/models/exchange.ts`、`src/api/itemApi.ts`、`src/api/exchangeApi.ts`、`src/stores/exchangeStore.ts`、`src/utils/formatters.ts`、`src/constants/messages.ts`、`src/hooks/useExchangeStats.ts`、`src/components/common/ExchangeCard.vue`、`src/pages/ItemDetail.vue`、`src/pages/Exchanges.vue`、`src/pages/Profile.vue`、`src/App.vue` 等文件。
 
 ## 环境变量
 

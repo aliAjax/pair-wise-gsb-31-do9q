@@ -12,6 +12,7 @@
       <span>待确认 {{ stats.pending }}</span>
       <span>已同意 {{ stats.accepted }}</span>
       <span>已完成 {{ stats.completed }}</span>
+      <span>已关闭 {{ stats.expired }}</span>
     </div>
 
     <div class="segmented">
@@ -34,7 +35,7 @@
         :users="authStore.users"
         @accept="exchangeStore.accept"
         @reject="exchangeStore.reject"
-        @complete="completeExchange"
+        @complete="exchangeStore.complete"
       />
     </div>
     <EmptyState
@@ -47,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 import EmptyState from '@/components/common/EmptyState.vue';
 import ExchangeCard from '@/components/common/ExchangeCard.vue';
@@ -73,10 +74,18 @@ const mine = computed(() => {
 const visibleExchanges = computed(() => mine.value);
 const stats = useExchangeStats(() => exchangeStore.exchanges);
 
-const completeExchange = async (id: string) => {
-  await exchangeStore.complete(id);
-  itemStore.items = itemStore.items.map((item) => item);
-};
+// 进入页面立即清扫一次到期请求，之后每 30 秒自动清扫，关闭后双方物品恢复可交换
+let sweepTimer: number | undefined;
+onMounted(() => {
+  void exchangeStore.sweepExpired();
+  sweepTimer = window.setInterval(() => {
+    void exchangeStore.sweepExpired();
+  }, 30 * 1000);
+});
+onBeforeUnmount(() => {
+  if (sweepTimer) window.clearInterval(sweepTimer);
+});
 
-void ExchangeStatus.PENDING;
+// 保持本页面对 ExchangeStatus 的直接引用（状态机约定：待确认 -> 已关闭由系统清扫完成）
+void ExchangeStatus.EXPIRED;
 </script>

@@ -295,6 +295,61 @@ main {
   color: #365f84;
 }
 
+.status-lock {
+  background: color-mix(in oklch, #7a5bbf, transparent 80%);
+  color: #5d4499;
+}
+
+.status-expired {
+  background: color-mix(in oklch, #a45050, transparent 80%);
+  color: #8f3f3f;
+}
+
+.exchange-card__deadline,
+.exchange-card__reason {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  background: color-mix(in oklch, #bb7a35, transparent 88%);
+  color: #9b5c1c;
+}
+
+.exchange-card__deadline strong {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+}
+
+.exchange-card__deadline.urgent {
+  background: color-mix(in oklch, #a45050, transparent 85%);
+  color: #8f3f3f;
+}
+
+.exchange-card__reason {
+  background: color-mix(in oklch, #5f6870, transparent 88%);
+  color: color-mix(in oklch, var(--rs-text), transparent 15%);
+}
+
+.exchange-card__items small {
+  color: color-mix(in oklch, var(--rs-text), transparent 40%);
+  font-size: 0.74rem;
+}
+
+.exchanges-hint {
+  margin: 0;
+  color: color-mix(in oklch, var(--rs-text), transparent 35%);
+  font-size: 0.82rem;
+}
+
+.exchange-box__tip {
+  margin: 0;
+  color: #9b5c1c;
+  font-size: 0.82rem;
+}
+
 .gallery {
   display: grid;
   gap: 10px;

@@ -17,7 +17,8 @@ ReSwap 是一个纯前端以物换物 Web 应用。用户可以本地模拟登�
 - 物品详情、物主资料、选择自己的物品发起交换。
 - 发布物品，支持本地 base64 图片上传、分类和成色选择。
 - 交换管理，区分我发起的和我收到的请求，支持同意、拒绝、完成。
-- 个人中心，编辑资料、上传头像、查看我发布的物品。
+- **待确认请求 72 小时有效期**：到期自动关闭并保留原记录，双方物品恢复可交换；到期后物主无法再确认；同一物品重发时新建请求、不复活旧单。列表实时显示剩余时间与关闭原因。
+- 个人中心，编辑资料、上传头像、查看我发布的物品（含“可交换 / 交换中”数量）。
 - 主题切换、全局错误处理和 Vant 提示。
 
 ## 启动与构建
@@ -71,6 +72,18 @@ src/
 - 存储层包含序列化、版本号、过期清理、存储 key 管理。
 - 首次启动会写入演示用户、物品和交换请求。
 
+## 交换请求 72 小时有效期
+
+待确认（`pending`）交换请求自创建起 **72 小时**（常量 `PENDING_EXCHANGE_TTL`，定义在 `src/constants/exchange.ts`）内有效：
+
+- 发起请求后双方物品进入 `booked`（交换中）被占用，期间不能再对相关物品发起或确认新请求。
+- 到期未处理由到期扫描（`exchangeApi.sweepExpired()` / `list()` 内的扫描，以及 `App.vue`、`Exchanges.vue` 的定时器与页面可见性监听）**自动关闭**：请求变为 `expired`，写入 `close_reason`，原始记录保留，双方物品恢复 `available`。
+- 到期后物主无法再同意/拒绝（`EXCHANGE_ACTION_FLOW[EXPIRED]` 为空，`transition` 对已关闭单一律拒绝）。
+- 已拒绝（`rejected`）与已完成（`completed`）的记录不受到期扫描影响。
+- 同一物品重发时调用 `create()` **新建一条请求**，旧的已关闭单保持不变、不会被复活。
+- 交换列表的待确认卡片实时倒计时显示剩余时间（不足 6 小时高亮），已拒绝/已关闭卡片展示关闭原因；个人页可看到物品由“交换中”恢复为“可交换”。
+- `Exchange` 含 `expires_at`（截止时间）与 `close_reason`（关闭原因）字段；历史缺失 `expires_at` 的待确认记录会在读取时按 `created_at + 72h` 自动补算。
+
 ## 横切关注点
 
 - 主题切换：`stores/themeStore.ts`、`constants/themes.ts`、`utils/themeUtils.ts`、`App.vue`、`components/common/CategoryFilter.vue`、`components/common/UserBrief.vue`、`components/common/ItemCard.vue`。
@@ -95,6 +108,9 @@ src/
 - `src/pages/ItemDetail.vue`
 - `src/pages/Publish.vue`
 - `src/pages/Profile.vue`
+- `src/App.vue`（到期扫描后随物品状态刷新）
+
+> 当前取值：`available`（可交换）、`booked`（交换中，待确认/已同意期间被占用）、`exchanged`（已交换）、`offline`（已下架）。
 
 ### ExchangeStatus
 
@@ -112,6 +128,9 @@ src/
 - `src/components/common/ExchangeCard.vue`
 - `src/pages/ItemDetail.vue`
 - `src/pages/Exchanges.vue`
+- `src/App.vue`（定时到期扫描）
+
+> 当前取值：`pending`（待确认，72h 有效）、`accepted`（已同意）、`rejected`（已拒绝）、`completed`（已完成）、`expired`（到期自动关闭，记录保留）。
 
 ## 分层与高耦合约束
 

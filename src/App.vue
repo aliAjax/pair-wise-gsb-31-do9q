@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onBeforeUnmount, onMounted } from 'vue';
 import { RouterLink, RouterView } from 'vue-router';
 import { ConfigProvider as VanConfigProvider } from 'vant';
 
@@ -43,8 +43,23 @@ const exchangeStore = useExchangeStore();
 const themeStore = useThemeStore();
 const vantTheme = computed(() => toVantTheme(themeStore.theme));
 
+// 待确认请求 72 小时到期自动关闭：全局定时扫描，保证任何页面都能释放物品
+let expiryTimer: ReturnType<typeof setInterval> | undefined;
+const sweep = () => void exchangeStore.sweepExpired();
+const onVisible = () => {
+  if (document.visibilityState === 'visible') sweep();
+};
+
 onMounted(async () => {
   themeStore.hydrate();
   await Promise.all([authStore.hydrate(), itemStore.hydrate(), exchangeStore.hydrate()]);
+  await exchangeStore.sweepExpired();
+  expiryTimer = setInterval(sweep, 1000 * 30);
+  document.addEventListener('visibilitychange', onVisible);
+});
+
+onBeforeUnmount(() => {
+  if (expiryTimer) clearInterval(expiryTimer);
+  document.removeEventListener('visibilitychange', onVisible);
 });
 </script>

@@ -36,9 +36,9 @@ export const userApi = {
   async list(): Promise<User[]> {
     const users = await storage.get<User[]>(STORAGE_KEYS.users, []);
     if (users.length) return users;
-    await storage.set(STORAGE_KEYS.users, seedUsers);
     await storage.set(STORAGE_KEYS.currentUserId, seedUsers[0].id);
-    return seedUsers;
+    // 返回持久化后的副本，避免更新资料时直接改动内存中的种子数组
+    return storage.set(STORAGE_KEYS.users, seedUsers);
   },
 
   async current(): Promise<User> {

@@ -12,7 +12,8 @@ const seedItems: Item[] = [
     category: '数码',
     condition: ItemCondition.GOOD,
     images: [],
-    status: ItemStatus.AVAILABLE,
+    // 存在待确认交换请求 item_chair -> item_camera，确认期间双方物品被占用
+    status: ItemStatus.BOOKED,
     location: '杭州 · 西湖',
     created_at: new Date().toISOString(),
   },
@@ -36,9 +37,34 @@ const seedItems: Item[] = [
     category: '运动',
     condition: ItemCondition.GOOD,
     images: [],
-    status: ItemStatus.AVAILABLE,
+    // 发起人拿出的物品同样在待确认期间被占用
+    status: ItemStatus.BOOKED,
     location: '上海 · 徐汇',
     created_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
+  },
+  {
+    id: 'item_speaker',
+    user_id: 'user_lin',
+    title: '马歇尔风格蓝牙音箱',
+    description: '桌面小音箱，音质温暖，想换数码配件或好书。',
+    category: '数码',
+    condition: ItemCondition.LIKE_NEW,
+    images: [],
+    status: ItemStatus.AVAILABLE,
+    location: '杭州 · 西湖',
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
+  },
+  {
+    id: 'item_jacket',
+    user_id: 'user_chen',
+    title: '日系工装夹克 M 码',
+    description: '只穿过两次，版型偏大，想换运动装备或家居小物。',
+    category: '服饰',
+    condition: ItemCondition.LIKE_NEW,
+    images: [],
+    status: ItemStatus.AVAILABLE,
+    location: '苏州 · 工业园',
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 20).toISOString(),
   },
   {
     id: 'item_lamp',
@@ -58,8 +84,8 @@ export const itemApi = {
   async list(): Promise<Item[]> {
     const items = await storage.get<Item[]>(STORAGE_KEYS.items, []);
     if (items.length) return items;
-    await storage.set(STORAGE_KEYS.items, seedItems);
-    return seedItems;
+    // 返回持久化后的副本，避免后续更新直接改动内存中的种子数组
+    return storage.set(STORAGE_KEYS.items, seedItems);
   },
 
   async detail(id: string): Promise<Item | undefined> {
@@ -93,5 +119,17 @@ export const itemApi = {
 
   async setStatus(id: string, status: ItemStatus): Promise<Item> {
     return this.update(id, { status });
+  },
+
+  /** 原子地批量修改多件物品状态，避免并发 read-modify-write 丢失更新 */
+  async setStatusMany(updates: { id: string; status: ItemStatus }[]): Promise<Item[]> {
+    if (!updates.length) return this.list();
+    const items = await this.list();
+    const patchMap = new Map(updates.map((entry) => [entry.id, entry.status]));
+    const nextItems = items.map((item) =>
+      patchMap.has(item.id) ? { ...item, status: patchMap.get(item.id) as ItemStatus } : item,
+    );
+    await storage.set(STORAGE_KEYS.items, nextItems);
+    return nextItems;
   },
 };

@@ -42,7 +42,15 @@
             留言
             <textarea v-model="messageText" rows="3" />
           </label>
-          <button class="primary-button" type="button" :disabled="item.status !== ItemStatus.AVAILABLE" @click="requestExchange">
+          <p v-if="item.status === ItemStatus.BOOKED" class="exchange-box__tip">
+            这件物品正在交换确认中，待确认请求关闭或完成后才会恢复可交换。
+          </p>
+          <button
+            class="primary-button"
+            type="button"
+            :disabled="item.status !== ItemStatus.AVAILABLE"
+            @click="requestExchange"
+          >
             发起交换
           </button>
         </div>
@@ -91,14 +99,20 @@ const requestExchange = async () => {
     message('请选择一件自己的物品', 'error');
     return;
   }
-  await exchangeStore.create({
-    from_user_id: authStore.currentUser.id,
-    to_user_id: owner.value.id,
-    from_item_id: selectedItemId.value,
-    to_item_id: item.value.id,
-    status: ExchangeStatus.PENDING,
-    message: messageText.value,
-  });
+  try {
+    await exchangeStore.create({
+      from_user_id: authStore.currentUser.id,
+      to_user_id: owner.value.id,
+      from_item_id: selectedItemId.value,
+      to_item_id: item.value.id,
+      status: ExchangeStatus.PENDING,
+      message: messageText.value,
+    });
+    selectedItemId.value = '';
+  } catch (error) {
+    // 物品被占用 / 已不可交换等业务错误在此提示，不冒泡到全局错误边界
+    message(error instanceof Error ? error.message : '发起交换失败', 'error');
+  }
 };
 
 const offlineItem = async () => {
